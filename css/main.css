@@ -1,0 +1,28 @@
+svg {
+  float: left;
+}
+
+path {
+  fill: none;
+}
+
+path.line {
+  stroke-width: 0.5;
+}
+
+.x-axis text,
+.y-axis text {
+  font-family: 'Droid Sans', sans-serif;
+  font-size: 10px;
+}
+
+.tick {
+  stroke: black;
+  strock-width: 0.5;
+}
+
+.x-axis .domain,
+.y-axis .domain {
+  stroke: black;
+  stroke-width: 2;
+}
