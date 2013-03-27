@@ -145,7 +145,6 @@
             x = lastPoint[1],
             y = yVal(lastPoint);
         json[i].datapoints.push([y, x + 10]);
-        //console.log(json[i].datapoints[json[i].datapoints.length - 1]);
       }
 
       svg.selectAll("g.series").each(function() {
