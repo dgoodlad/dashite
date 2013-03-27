@@ -68,16 +68,27 @@
                      .text(function(d) { return d.target; })
                      .style("color", function(d, index) { return colors(index); });
 
-    svg.selectAll("path.line")
-       .data(json)
-       .enter().append("path")
-         .classed("line", true)
-         .attr("stroke", function(d, index) {
-           return colors(index);
-         })
-         .attr("d", function(dataset) {
-           return line(dataset.datapoints);
-         });
+    svg.append("defs").append("clipPath")
+      .attr("id", "clip")
+      .append("rect")
+      .attr("width", w)
+      .attr("height", h);
+
+    svg.selectAll("g.series")
+      .data(json, function(d) { return d.target; })
+      .enter().append("g")
+        .attr("class", "series")
+        .attr("clip-path", "url(#clip)")
+        .attr("stroke", function(d, index) {
+          return colors(index);
+        })
+        .selectAll("path.line")
+          .data(function(d) { return [d.datapoints]; })
+          .enter().append("path")
+            .classed("line", true)
+            .attr("d", function(d) {
+              return line(d);
+            });
 
     svg.append("g")
       .classed("x-axis", true)
