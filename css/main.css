@@ -26,3 +26,15 @@ path.line {
   stroke: black;
   stroke-width: 2;
 }
+
+.overlay {
+  fill: none;
+  stroke: none;
+  pointer-events: all;
+}
+
+.focus line {
+  stroke-width: 0.5;
+  fill: none;
+  stroke: silver;
+}
