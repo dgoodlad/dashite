@@ -71,8 +71,10 @@
     svg.append("defs").append("clipPath")
       .attr("id", "clip")
       .append("rect")
-      .attr("width", w)
-      .attr("height", h);
+      .attr("x", padding)
+      .attr("y", 0)
+      .attr("width", w - (2 * padding))
+      .attr("height", h - padding);
 
     svg.selectAll("g.series")
       .data(json, function(d) { return d.target; })
