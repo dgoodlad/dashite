@@ -20,9 +20,9 @@
   function renderGraph(el, json) {
     var colors = d3.scale.category10();
 
-    var h = 300;
-    var w = 800;
-    var padding = 30;
+    var h = 600;
+    var w = 700;
+    var padding = 80;
 
     var xScale = d3.time.scale()
       .range([padding, w - padding])
