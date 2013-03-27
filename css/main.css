@@ -16,6 +16,17 @@ path.line {
   font-size: 10px;
 }
 
+.x-axis text,
+.x-axis path,
+.x-axis line,
+.y-axis text,
+.y-axis path,
+.y-axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
 .tick {
   stroke: black;
   strock-width: 0.5;
