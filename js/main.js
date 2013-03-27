@@ -136,6 +136,47 @@
         }
         focus.attr("transform", "translate(" + xScale(xVal(d)) + ",0)");
       });
+
+    var tick = function() {
+      for(var i = 0; i < json.length; i++) {
+        var lastPoint = json[i].datapoints[json[i].datapoints.length - 1],
+            x = lastPoint[1],
+            y = yVal(lastPoint);
+        json[i].datapoints.push([y, x + 10]);
+        //console.log(json[i].datapoints[json[i].datapoints.length - 1]);
+      }
+
+      svg.selectAll("g.series").each(function() {
+        d3.select(this).selectAll("path").each(function() {
+          d3.select(this)
+            .attr("d", line)
+            .attr("transform", null)
+            .transition()
+              .duration(500)
+              .ease("linear")
+              .attr("transform", "translate(" + (-1 * (xScale(xVal(lastPoint)) - padding)) + ")")
+        });
+      });
+
+      xScale.domain([
+        d3.min(json, function(d) { return d3.min(d.datapoints, xVal) }),
+        d3.max(json, function(d) { return d3.max(d.datapoints, xVal) })
+      ]);
+      yScale.domain([
+        d3.min(json, function(d) { return d3.min(d.datapoints, yVal) }),
+        d3.max(json, function(d) { return d3.max(d.datapoints, yVal) }),
+      ]);
+      xAxis.scale(xScale);
+      yAxis.scale(yScale);
+      d3.select("g.x-axis").transition().duration(500).call(xAxis);
+      d3.select("g.y-axis").transition().duration(500).call(yAxis);
+
+      for(var i = 0; i < json.length; i++) {
+        json[i].datapoints.shift();
+      }
+    }
+
+    return tick;
   }
 
   getGraphSources().forEach(function(source) {
@@ -143,7 +184,8 @@
       if(err && !json) {
         renderError(err, source);
       } else {
-        renderGraph("body", json);
+        var tick = renderGraph("body", json);
+        setInterval(tick, 10000);
       }
     });
   });
