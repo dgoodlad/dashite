@@ -153,12 +153,12 @@
           d3.select(this)
             .attr("d", line)
             .attr("transform", null)
-            .transition()
-              .duration(500)
-              .ease("linear")
-              .attr("transform", "translate(" + (-1 * (xScale(xVal(lastPoint)) - padding)) + ")")
         });
       });
+
+      for(var i = 0; i < json.length; i++) {
+        json[i].datapoints.shift();
+      }
 
       xScale.domain([
         d3.min(json, function(d) { return d3.min(d.datapoints, xVal) }),
@@ -170,12 +170,15 @@
       ]);
       xAxis.scale(xScale);
       yAxis.scale(yScale);
-      d3.select("g.x-axis").transition().duration(500).call(xAxis);
-      d3.select("g.y-axis").transition().duration(500).call(yAxis);
 
-      for(var i = 0; i < json.length; i++) {
-        json[i].datapoints.shift();
-      }
+      var t = svg.transition()
+        .duration(500)
+        .ease("linear")
+
+      t.selectAll("g.series path")
+        .attr("transform", "translate(" + (xScale(xVal(json[0].datapoints[0])) - xScale(xVal(json[0].datapoints[1]))) + ")");
+      t.select("g.x-axis").call(xAxis);
+      t.select("g.y-axis").call(yAxis);
     }
 
     return tick;
@@ -187,7 +190,8 @@
         renderError(err, source);
       } else {
         var tick = renderGraph("body", json);
-        setInterval(tick, 10000);
+        //setTimeout(tick, 1000);
+        setInterval(tick, 1000);
       }
     });
   });
