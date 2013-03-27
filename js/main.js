@@ -147,26 +147,21 @@
         json[i].datapoints.push([y, x + 10]);
       }
 
-      svg.selectAll("g.series").each(function() {
-        d3.select(this).selectAll("path").each(function() {
-          d3.select(this)
-            .attr("d", line)
-            .attr("transform", null)
-        });
-      });
-
-      for(var i = 0; i < json.length; i++) {
-        json[i].datapoints.shift();
-      }
-
       xScale.domain([
-        d3.min(json, function(d) { return d3.min(d.datapoints, xVal) }),
-        d3.max(json, function(d) { return d3.max(d.datapoints, xVal) })
+        d3.min(json, function(d) { return d3.min(d.datapoints.slice(1), xVal) }),
+        d3.max(json, function(d) { return d3.max(d.datapoints.slice(1), xVal) })
       ]);
+
+      /* Draw the line with the new xscale, but translated back to the right */
+      svg.selectAll("g.series path")
+        .attr("d", line)
+        .attr("transform", "translate(" + (xScale(xVal(json[0].datapoints[2])) - padding) + ",0)");
+
       yScale.domain([
-        d3.min(json, function(d) { return d3.min(d.datapoints, yVal) }),
-        d3.max(json, function(d) { return d3.max(d.datapoints, yVal) }),
+        d3.min(json, function(d) { return d3.min(d.datapoints.slice(1), yVal) }),
+        d3.max(json, function(d) { return d3.max(d.datapoints.slice(1), yVal) }),
       ]);
+
       xAxis.scale(xScale);
       yAxis.scale(yScale);
 
@@ -175,9 +170,14 @@
         .ease("linear")
 
       t.selectAll("g.series path")
-        .attr("transform", "translate(" + (xScale(xVal(json[0].datapoints[0])) - xScale(xVal(json[0].datapoints[1]))) + ")");
+        .attr("d", line)
+        .attr("transform", "translate(0,0)");
       t.select("g.x-axis").call(xAxis);
       t.select("g.y-axis").call(yAxis);
+
+      for(var i = 0; i < json.length; i++) {
+        json[i].datapoints.shift();
+      }
     }
 
     return tick;
