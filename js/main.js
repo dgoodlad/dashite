@@ -123,10 +123,11 @@
       .on("mousemove", function() {
         /* TODO validate the assumption that the first series in the json will
          * have x values for the whole shebang */
+        var data = d3.selectAll("g.series").datum();
         var x0 = xScale.invert(d3.mouse(this)[0]),
-            i = bisectDate(json[0].datapoints, x0, 1),
-            d0 = json[0].datapoints[i - 1],
-            d1 = json[0].datapoints[i];
+            i = bisectDate(data.datapoints, x0, 1),
+            d0 = data.datapoints[i - 1],
+            d1 = data.datapoints[i];
         if(d0 && d1) {
           var d = x0 - xVal(d0) > xVal(d1) - x0 ? d1 : d0;
         } else if(d0) {
@@ -139,34 +140,44 @@
         focus.attr("transform", "translate(" + xScale(xVal(d)) + ",0)");
       });
 
-    var tick = function() {
-      for(var i = 0; i < json.length; i++) {
-        var lastPoint = json[i].datapoints[json[i].datapoints.length - 1],
-            x = lastPoint[1],
-            y = yVal(lastPoint);
-        json[i].datapoints.push([y, x + 10]);
-      }
+    var tick = function(newJson) {
+      var data = [];
+      var lastData = d3.selectAll("g.series").data();
+      for(var i = 0; i < lastData.length; i++) {
+        var droppedPointCount = d3.bisectLeft(
+          lastData[i].datapoints.map(function(d) { return d[1]; }),
+          newJson[i].datapoints[0][1]
+        );
+        var addedPointCount = newJson[i].datapoints.length - lastData[i].datapoints.length;
+        data[i] = {
+          target: newJson[i].target,
+          datapoints: lastData[i].datapoints.slice(0, droppedPointCount).concat(newJson[i].datapoints)
+        }
+      };
 
       xScale.domain([
-        d3.min(json, function(d) { return d3.min(d.datapoints.slice(1), xVal) }),
-        d3.max(json, function(d) { return d3.max(d.datapoints.slice(1), xVal) })
+        d3.min(data, function(d) { return d3.min(d.datapoints.slice(1), xVal) }),
+        d3.max(data, function(d) { return d3.max(d.datapoints.slice(1), xVal) })
       ]);
 
       /* Draw the line with the new xscale, but translated back to the right */
-      svg.selectAll("g.series path")
-        .attr("d", line)
-        .attr("transform", "translate(" + (xScale(xVal(json[0].datapoints[2])) - padding) + ",0)");
+      svg.selectAll("g.series")
+        .data(data, function(d) { return d.target; })
+        .selectAll("path.line")
+          .data(function(d) { return [d.datapoints]; })
+          .attr("d", line)
+          .attr("transform", "translate(" + (xScale(xVal(data[0].datapoints[2])) - padding) + ",0)");
 
       yScale.domain([
-        d3.min(json, function(d) { return d3.min(d.datapoints.slice(1), yVal) }),
-        d3.max(json, function(d) { return d3.max(d.datapoints.slice(1), yVal) }),
+        d3.min(data, function(d) { return d3.min(d.datapoints.slice(1), yVal) }),
+        d3.max(data, function(d) { return d3.max(d.datapoints.slice(1), yVal) }),
       ]);
 
       xAxis.scale(xScale);
       yAxis.scale(yScale);
 
       var t = svg.transition()
-        .duration(500)
+        .duration(300)
         .ease("linear")
 
       t.selectAll("g.series path")
@@ -175,23 +186,64 @@
       t.select("g.x-axis").call(xAxis);
       t.select("g.y-axis").call(yAxis);
 
-      for(var i = 0; i < json.length; i++) {
-        json[i].datapoints.shift();
+      for(var i = 0; i < data.length; i++) {
+        data[i].datapoints.shift();
       }
     }
 
     return tick;
   }
 
-  getGraphSources().forEach(function(source) {
-    d3.json(source, function(err, json) {
-      if(err && !json) {
-        renderError(err, source);
-      } else {
-        var tick = renderGraph("body", json);
-        //setTimeout(tick, 1000);
-        setInterval(tick, 1000);
-      }
+  function randomSeries(name, start, stop, step) {
+    var rand = d3.random.normal(100, 10);
+    var times = d3.range(start, stop, step);
+    var series = times.map(function(time) {
+      return [rand(), time];
     });
-  });
+
+    return function(steps) {
+      if(steps != 0) {
+        var lastTime = series[series.length - 1][1];
+        var extraTimes = d3.range(lastTime + step, lastTime + step + steps * step, step);
+        series = series.slice(steps).concat(extraTimes.map(function(time) {
+          return [rand(), time];
+        }));
+        console.log(series);
+      }
+      return { target: 'a', datapoints: series };
+    }
+  }
+
+  getGraphSources().forEach(function(source) {
+    var start = 1364523350;
+    var data = randomSeries('a', start, start + 60, 10);
+
+    var tick = renderGraph("body", [data(0)]);
+    var update = function() {
+      tick([data(1)]);
+    };
+
+    setInterval(update, 10000);
+  })
+
+  //getGraphSources().forEach(function(source) {
+  //  d3.json(source, function(err, json) {
+  //    if(err && !json) {
+  //      renderError(err, source);
+  //    } else {
+  //      var tick = renderGraph("body", json),
+  //          update = function() {
+  //            d3.json(source, function(err, json) {
+  //              if(err && !json) {
+  //                renderError(err, source);
+  //              } else {
+  //                tick(json);
+  //              }
+  //            });
+  //          };
+  //      //setTimeout(tick, 1000);
+  //      setInterval(update, 1000);
+  //    }
+  //  });
+  //});
 })();
