@@ -51,7 +51,7 @@
       .x(function(d) { return xScale(xVal(d)); })
       .y(function(d) { return yScale(yVal(d)); })
       .interpolate("monotone")
-      .defined(function(d) { return !isNaN(yVal(d)); });
+      .defined(function(d) { return !(yVal(d) == null) && !isNaN(yVal(d)); });
 
     var svg = d3.select(el)
                 .append("svg")
