@@ -214,36 +214,36 @@
     }
   }
 
-  getGraphSources().forEach(function(source) {
-    var start = 1364523350;
-    var data = randomSeries('a', start, start + 60, 10);
-
-    var tick = renderGraph("body", [data(0)]);
-    var update = function() {
-      tick([data(1)]);
-    };
-
-    setInterval(update, 10000);
-  })
-
   //getGraphSources().forEach(function(source) {
-  //  d3.json(source, function(err, json) {
-  //    if(err && !json) {
-  //      renderError(err, source);
-  //    } else {
-  //      var tick = renderGraph("body", json),
-  //          update = function() {
-  //            d3.json(source, function(err, json) {
-  //              if(err && !json) {
-  //                renderError(err, source);
-  //              } else {
-  //                tick(json);
-  //              }
-  //            });
-  //          };
-  //      //setTimeout(tick, 1000);
-  //      setInterval(update, 1000);
-  //    }
-  //  });
-  //});
+  //  var start = 1364523350;
+  //  var data = randomSeries('a', start, start + 60, 10);
+
+  //  var tick = renderGraph("body", [data(0)]);
+  //  var update = function() {
+  //    tick([data(1)]);
+  //  };
+
+  //  setInterval(update, 10000);
+  //})
+
+  getGraphSources().forEach(function(source) {
+    d3.json(source, function(err, json) {
+      if(err && !json) {
+        renderError(err, source);
+      } else {
+        var tick = renderGraph("body", json),
+            update = function() {
+              d3.json(source, function(err, json) {
+                if(err && !json) {
+                  renderError(err, source);
+                } else {
+                  tick(json);
+                }
+              });
+            };
+        //setTimeout(update, 10000);
+        setInterval(update, 10000);
+      }
+    });
+  });
 })();
