@@ -111,6 +111,10 @@
       .attr("y1", 0)
       .attr("y2", h - padding);
 
+    var annotation = focus.append("g")
+      .classed("annotation", true)
+      .attr("transform", "translate(0, " + (h - padding) + ")");
+
     svg.append("rect")
       .attr("class", "overlay")
       .attr("x", padding)
@@ -128,7 +132,12 @@
             d0 = data.datapoints[i - 1],
             d1 = data.datapoints[i];
         if(d0 && d1) {
-          var d = x0 - xVal(d0) > xVal(d1) - x0 ? d1 : d0;
+          if(x0 - xVal(d0) > xVal(d1) - x0) {
+            var d = d1;
+          } else {
+            var d = d0;
+            i = i - 1;
+          }
         } else if(d0) {
           var d = d0;
         } else if(d1) {
@@ -137,6 +146,26 @@
           console.log("Failed to get datapoint for highlight");
         }
         focus.attr("transform", "translate(" + xScale(xVal(d)) + ",0)");
+
+        var values = d3.selectAll("g.series").data().map(function(d) {
+          return { target: d.target,
+                   value:  yVal(d.datapoints[i]) };
+        });
+
+        var textHeight = "20"; //em
+        var formatter = d3.format(".2f");
+        var text = annotation.selectAll("text")
+          .data(values, function(d) { return d.target + " " + d.value; });
+        text.enter()
+          .append("text")
+          .attr("transform", function(d, i) {
+            return "translate(0, " + i * textHeight + ")";
+          })
+          .attr("stroke", function(d, index) { return colors(index); })
+          .text(function(d) { return formatter(d.value); })
+        text.exit()
+          .remove();
+
       });
 
     var tick = function(newJson) {
