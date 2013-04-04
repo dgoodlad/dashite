@@ -36,7 +36,8 @@
       .domain([
         d3.min(json, function(d) { return d3.min(d.datapoints, yVal) }),
         d3.max(json, function(d) { return d3.max(d.datapoints, yVal) }),
-      ]);
+      ])
+      .nice();
 
     var xAxis = d3.svg.axis()
       .scale(xScale)
@@ -171,7 +172,8 @@
       yScale.domain([
         d3.min(data, function(d) { return d3.min(d.datapoints.slice(1), yVal) }),
         d3.max(data, function(d) { return d3.max(d.datapoints.slice(1), yVal) }),
-      ]);
+      ])
+      .nice();
 
       xAxis.scale(xScale);
       yAxis.scale(yScale);
