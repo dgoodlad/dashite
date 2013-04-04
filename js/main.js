@@ -48,10 +48,8 @@
       .orient("left");
 
     var line = d3.svg.line()
-      .interpolate("basis")
       .x(function(d) { return xScale(xVal(d)); })
       .y(function(d) { return yScale(yVal(d)); })
-      .interpolate("monotone")
       .defined(function(d) { return !(yVal(d) == null) && !isNaN(yVal(d)); });
 
     var svg = d3.select(el)
