@@ -256,7 +256,7 @@
         }));
         console.log(series);
       }
-      return { target: 'a', datapoints: series };
+      return { target: name, datapoints: series };
     }
   }
 
