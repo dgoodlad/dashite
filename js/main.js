@@ -30,15 +30,17 @@
   }
 
   function renderGraph(el, json, options) {
-    var colors = d3.scale.category10();
     var normalizedOptions = normalizeOptions(options || {}, {
       w: 700,
       h: 600,
       marginLeft:   80,
       marginRight:  0,
       marginTop:    0,
-      marginBottom: 80
+      marginBottom: 80,
+      colors: d3.scale.category10()
     });
+
+    var colors = normalizedOptions.colors;
 
     var h = normalizedOptions.h;
     var w = normalizedOptions.w;
