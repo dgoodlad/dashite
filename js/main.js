@@ -17,12 +17,29 @@
 
   var bisectDate = d3.bisector(function(d) { return xVal(d); }).left;
 
-  function renderGraph(el, json) {
-    var colors = d3.scale.category10();
+  function normalizeOptions(options, defaults) {
+    var normalized = {};
+    d3.map(defaults).forEach(function(option,defaultValue) {
+      if (options[option] == undefined || options[option] == null) {
+        normalized[option] = defaultValue;
+      } else {
+        normalized[option] = options[option];
+      }
+    });
+    return normalized;
+  }
 
-    var h = 600;
-    var w = 700;
-    var padding = 80;
+  function renderGraph(el, json, options) {
+    var colors = d3.scale.category10();
+    var normalizedOptions = normalizeOptions(options || {}, {
+      w: 700,
+      h: 600,
+      padding: 80
+    });
+
+    var h = normalizedOptions.h;
+    var w = normalizedOptions.w;
+    var padding = normalizedOptions.padding;
 
     var xScale = d3.time.scale()
       .range([padding, w - padding])
