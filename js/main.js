@@ -203,21 +203,26 @@
     var tick = function(newJson) {
       var data = [];
       var lastData = d3.selectAll("g.series").data();
+      var dropped = [];
       for(var i = 0; i < lastData.length; i++) {
-        var droppedPointCount = d3.bisectLeft(
-          lastData[i].datapoints.map(function(d) { return d[1]; }),
-          newJson[i].datapoints[0][1]
-        );
-        var addedPointCount = newJson[i].datapoints.length - lastData[i].datapoints.length;
+        var oldDates = lastData[i].datapoints.map(xVal);
+        var newDates = newJson[i].datapoints.map(xVal);
+        dropped[i] = d3.bisectLeft(oldDates, newDates[0]);
         data[i] = {
           target: newJson[i].target,
-          datapoints: lastData[i].datapoints.slice(0, droppedPointCount).concat(newJson[i].datapoints)
+          datapoints: lastData[i].datapoints.slice(0, dropped[i]).concat(newJson[i].datapoints)
         }
       };
 
+      function withoutDropped(f) {
+        return function(d,i) {
+          return f(d.datapoints.slice(dropped[i]));
+        }
+      }
+
       xScale.domain([
-        d3.min(data, function(d) { return d3.min(d.datapoints.slice(1), xVal) }),
-        d3.max(data, function(d) { return d3.max(d.datapoints.slice(1), xVal) })
+        d3.min(data, withoutDropped(function(d) { return d3.min(d, xVal) })),
+        d3.max(data, withoutDropped(function(d) { return d3.max(d, xVal) })),
       ]);
 
       /* Draw the line with the new xscale, but translated back to the right */
@@ -229,8 +234,8 @@
           .attr("transform", "translate(" + (xScale(xVal(data[0].datapoints[2])) - margin.left) + ",0)");
 
       yScale.domain([
-        d3.min(data, function(d) { return d3.min(d.datapoints.slice(1), yVal) }),
-        d3.max(data, function(d) { return d3.max(d.datapoints.slice(1), yVal) }),
+        d3.min(data, withoutDropped(function(d) { return d3.min(d, yVal) })),
+        d3.max(data, withoutDropped(function(d) { return d3.max(d, yVal) })),
       ])
       .nice();
 
