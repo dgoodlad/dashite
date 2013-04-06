@@ -34,22 +34,34 @@
     var normalizedOptions = normalizeOptions(options || {}, {
       w: 700,
       h: 600,
-      padding: 80
+      marginLeft:   80,
+      marginRight:  0,
+      marginTop:    0,
+      marginBottom: 80
     });
 
     var h = normalizedOptions.h;
     var w = normalizedOptions.w;
-    var padding = normalizedOptions.padding;
+    var margin = {
+      left:   normalizedOptions.marginLeft,
+      right:  normalizedOptions.marginRight,
+      top:    normalizedOptions.marginTop,
+      bottom: normalizedOptions.marginBottom,
+    }
 
     var xScale = d3.time.scale()
-      .range([padding, w - padding])
-      .domain([
+      .range([margin.left, w + margin.left]);
+
+    var yScale = d3.scale.linear()
+      // "Backwards" range to render increasing values from bottom up
+      .range([h, 0]);
+
+    xScale.domain([
         d3.min(json, function(d) { return d3.min(d.datapoints, xVal) }),
         d3.max(json, function(d) { return d3.max(d.datapoints, xVal) })
       ]);
 
-    var yScale = d3.scale.linear()
-      .range([h - padding, 0])
+    yScale
       .domain([
         d3.min(json, function(d) { return d3.min(d.datapoints, yVal) }),
         d3.max(json, function(d) { return d3.max(d.datapoints, yVal) }),
@@ -71,8 +83,8 @@
 
     var svg = d3.select(el)
                 .append("svg")
-                .attr("height", h)
-                .attr("width", w);
+                .attr("height", h + margin.top + margin.bottom)
+                .attr("width", w + margin.left + margin.right);
 
     var legend = d3.select(el)
                    .append("ul")
@@ -87,10 +99,10 @@
     svg.append("defs").append("clipPath")
       .attr("id", "clip")
       .append("rect")
-      .attr("x", padding)
+      .attr("x", margin.left)
       .attr("y", 0)
-      .attr("width", w - (2 * padding))
-      .attr("height", h - padding);
+      .attr("width", w)
+      .attr("height", h);
 
     svg.selectAll("g.series")
       .data(json, function(d) { return d.target; })
@@ -110,34 +122,35 @@
 
     svg.append("g")
       .classed("x-axis", true)
-      .attr("transform", "translate(0, " + (h - padding) + ")")
+      .attr("transform", "translate(0, " + h + ")")
       .call(xAxis);
 
     svg.append("g")
       .classed("y-axis", true)
-      .attr("transform", "translate(" + padding + ", 0)")
+      .attr("transform", "translate(" + margin.left + ", 0)")
       .call(yAxis);
 
     var focus = svg.append("g")
       .attr("class", "focus")
+      .attr("transform", "translate(" + margin.left + ", 0)")
       .style("display", "none");
 
     focus.append("line")
       .attr("x1", 0)
       .attr("x2", 0)
       .attr("y1", 0)
-      .attr("y2", h - padding);
+      .attr("y2", h);
 
     var annotation = focus.append("g")
       .classed("annotation", true)
-      .attr("transform", "translate(0, " + (h - padding) + ")");
+      .attr("transform", "translate(0, " + h + ")");
 
     svg.append("rect")
       .attr("class", "overlay")
-      .attr("x", padding)
+      .attr("x", margin.left)
       .attr("y", 0)
-      .attr("width", w - 2 * padding)
-      .attr("height", h - padding)
+      .attr("width", w)
+      .attr("height", h)
       .on("mouseover", function() { focus.style("display", null); })
       .on("mouseout",  function() { focus.style("display", "none"); })
       .on("mousemove", function() {
@@ -211,7 +224,7 @@
         .selectAll("path.line")
           .data(function(d) { return [d.datapoints]; })
           .attr("d", line)
-          .attr("transform", "translate(" + (xScale(xVal(data[0].datapoints[2])) - padding) + ",0)");
+          .attr("transform", "translate(" + (xScale(xVal(data[0].datapoints[2])) - margin.left) + ",0)");
 
       yScale.domain([
         d3.min(data, function(d) { return d3.min(d.datapoints.slice(1), yVal) }),
