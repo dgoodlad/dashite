@@ -200,64 +200,77 @@
 
       });
 
-    var tick = function(newJson) {
-      var data = [];
-      var lastData = d3.selectAll("g.series").data();
-      var dropped = [];
-      for(var i = 0; i < lastData.length; i++) {
-        var oldDates = lastData[i].datapoints.map(xVal);
-        var newDates = newJson[i].datapoints.map(xVal);
-        dropped[i] = d3.bisectLeft(oldDates, newDates[0]);
-        data[i] = {
-          target: newJson[i].target,
-          datapoints: lastData[i].datapoints.slice(0, dropped[i]).concat(newJson[i].datapoints)
-        }
-      };
 
-      function withoutDropped(f) {
-        return function(d,i) {
-          return f(d.datapoints.slice(dropped[i]));
-        }
-      }
+    return function(newData) {
+      rerenderGraph({
+        svg: svg,
+        xScale: xScale,
+        yScale: yScale,
+        xAxis:  xAxis,
+        yAxis:  yAxis,
+        line:   line,
+        w:      w,
+        h:      h,
+        margin: margin,
+      }, newData);
+    };
+  }
 
-      xScale.domain([
-        d3.min(data, withoutDropped(function(d) { return d3.min(d, xVal) })),
-        d3.max(data, withoutDropped(function(d) { return d3.max(d, xVal) })),
-      ]);
-
-      /* Draw the line with the new xscale, but translated back to the right */
-      svg.selectAll("g.series")
-        .data(data, function(d) { return d.target; })
-        .selectAll("path.line")
-          .data(function(d) { return [d.datapoints]; })
-          .attr("d", line)
-          .attr("transform", "translate(" + (xScale(xVal(data[0].datapoints[2])) - margin.left) + ",0)");
-
-      yScale.domain([
-        d3.min(data, withoutDropped(function(d) { return d3.min(d, yVal) })),
-        d3.max(data, withoutDropped(function(d) { return d3.max(d, yVal) })),
-      ])
-      .nice();
-
-      xAxis.scale(xScale);
-      yAxis.scale(yScale);
-
-      var t = svg.transition()
-        .duration(300)
-        .ease("linear")
-
-      t.selectAll("g.series path")
-        .attr("d", line)
-        .attr("transform", "translate(0,0)");
-      t.select("g.x-axis").call(xAxis);
-      t.select("g.y-axis").call(yAxis);
-
-      for(var i = 0; i < data.length; i++) {
-        data[i].datapoints.shift();
+  function rerenderGraph(graph, newData) {
+    function withoutDropped(f) {
+      return function(d,i) {
+        return f(d.datapoints.slice(dropped[i]));
       }
     }
 
-    return tick;
+    var data = [];
+    var oldData = graph.svg.selectAll("g.series").data();
+    var dropped = [];
+
+    for(var i = 0; i < oldData.length; i++) {
+      var oldDates = oldData[i].datapoints.map(xVal);
+      var newDates = newData[i].datapoints.map(xVal);
+      dropped[i] = d3.bisectLeft(oldDates, newDates[0]);
+      data[i] = {
+        target: newData[i].target,
+        datapoints: oldData[i].datapoints.slice(0, dropped[i]).concat(newData[i].datapoints)
+      }
+    };
+
+    graph.xScale.domain([
+      d3.min(data, withoutDropped(function(d) { return d3.min(d, xVal) })),
+      d3.max(data, withoutDropped(function(d) { return d3.max(d, xVal) })),
+    ]);
+
+    /* Draw the line with the new xscale, but translated back to the right */
+    graph.svg.selectAll("g.series")
+      .data(data, function(d) { return d.target; })
+      .selectAll("path.line")
+        .data(function(d) { return [d.datapoints]; })
+        .attr("d", graph.line)
+        .attr("transform", "translate(" + (graph.xScale(xVal(data[0].datapoints[2])) - graph.margin.left) + ",0)");
+
+    graph.yScale.domain([
+      d3.min(data, withoutDropped(function(d) { return d3.min(d, yVal) })),
+      d3.max(data, withoutDropped(function(d) { return d3.max(d, yVal) })),
+    ]).nice();
+
+    graph.xAxis.scale(graph.xScale);
+    graph.yAxis.scale(graph.yScale);
+
+    var t = graph.svg.transition()
+      .duration(300)
+      .ease("linear");
+
+    t.selectAll("g.series path")
+      .attr("d", graph.line)
+      .attr("transform", "translate(0,0)");
+    t.select("g.x-axis").call(graph.xAxis);
+    t.select("g.y-axis").call(graph.yAxis);
+
+    for(var i = 0; i < data.length; i++) {
+      data[i].datapoints.shift();
+    }
   }
 
   function randomSeries(name, start, stop, step) {
