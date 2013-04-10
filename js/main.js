@@ -147,6 +147,19 @@
       .classed("annotation", true)
       .attr("transform", "translate(0, " + h + ")");
 
+    var graph = {
+      svg: svg,
+      xScale: xScale,
+      yScale: yScale,
+      xAxis:  xAxis,
+      yAxis:  yAxis,
+      line:   line,
+      w:      w,
+      h:      h,
+      margin: margin,
+      colors: colors
+    };
+
     svg.append("rect")
       .attr("class", "overlay")
       .attr("x", margin.left)
@@ -158,62 +171,62 @@
       .on("mousemove", function() {
         /* TODO validate the assumption that the first series in the json will
          * have x values for the whole shebang */
-        var data = d3.selectAll("g.series").datum();
-        var x0 = xScale.invert(d3.mouse(this)[0]),
-            i = bisectDate(data.datapoints, x0, 1),
-            d0 = data.datapoints[i - 1],
-            d1 = data.datapoints[i];
-        if(d0 && d1) {
-          if(x0 - xVal(d0) > xVal(d1) - x0) {
-            var d = d1;
-          } else {
-            var d = d0;
-            i = i - 1;
-          }
-        } else if(d0) {
-          var d = d0;
-        } else if(d1) {
-          var d = d1;
-        } else {
-          console.log("Failed to get datapoint for highlight");
-        }
-        focus.attr("transform", "translate(" + xScale(xVal(d)) + ",0)");
 
-        var values = d3.selectAll("g.series").data().map(function(d) {
-          return { target: d.target,
-                   value:  yVal(d.datapoints[i]) };
-        });
-
-        var textHeight = "20"; //em
-        var formatter = d3.format(".2f");
-        var text = annotation.selectAll("text")
-          .data(values, function(d) { return d.target + " " + d.value; });
-        text.enter()
-          .append("text")
-          .attr("transform", function(d, i) {
-            return "translate(0, " + i * textHeight + ")";
-          })
-          .attr("stroke", function(d, index) { return colors(index); })
-          .text(function(d) { return formatter(d.value); })
-        text.exit()
-          .remove();
-
+        renderAnnotation(graph, xScale.invert(d3.mouse(this)[0]));
       });
 
 
     return function(newData) {
-      rerenderGraph({
-        svg: svg,
-        xScale: xScale,
-        yScale: yScale,
-        xAxis:  xAxis,
-        yAxis:  yAxis,
-        line:   line,
-        w:      w,
-        h:      h,
-        margin: margin,
-      }, newData);
+      rerenderGraph(graph, newData);
     };
+  }
+
+  function renderAnnotation(graph, x) {
+    function datapointAt(datapoints, x) {
+      var i = bisectDate(datapoints, x, 1);
+      var d0 = datapoints[i - 1];
+      var d1 = datapoints[i];
+      if(d0 && d1) {
+        if(x - xVal(d0) > xVal(d1) - x) {
+          var d = d1;
+        } else {
+          var d = d0;
+          i = i - 1;
+        }
+      } else if(d0) {
+        var d = d0;
+      } else if(d1) {
+        var d = d1;
+      } else {
+        // TODO
+      }
+      return d;
+    }
+
+    var textHeight = "20"; //em
+    var formatter = d3.format(".2f");
+
+    var annotation = graph.svg.select("g.annotation");
+    var data = graph.svg.selectAll("g.series").data();
+    var values = data.map(function(d) {
+      var datapoint = datapointAt(d.datapoints, x);
+      return { target: d.target,
+               time:  xVal(datapoint),
+               value: yVal(datapoint) };
+    });
+    graph.svg.select("g.focus")
+      .attr("transform", "translate(" + graph.xScale(values[0].time) + ",0)");
+    var text = annotation.selectAll("text")
+      .data(values, function(d) { return d.target + " " + d.value; });
+    text.enter()
+      .append("text")
+      .attr("transform", function(d, i) {
+        return "translate(0, " + i * textHeight + ")";
+      })
+      .attr("stroke", function(d, index) { return graph.colors(index); })
+      .text(function(d) { return formatter(d.value); });
+    text.exit()
+      .remove();
   }
 
   function rerenderGraph(graph, newData) {
@@ -287,42 +300,45 @@
         series = series.slice(steps).concat(extraTimes.map(function(time) {
           return [rand(), time];
         }));
-        console.log(series);
       }
       return { target: name, datapoints: series };
     }
   }
 
-  //getGraphSources().forEach(function(source) {
-  //  var start = 1364523350;
-  //  var data = randomSeries('a', start, start + 60, 10);
-
-  //  var tick = renderGraph("body", [data(0)]);
-  //  var update = function() {
-  //    tick([data(1)]);
-  //  };
-
-  //  setInterval(update, 10000);
-  //})
-
   getGraphSources().forEach(function(source) {
-    d3.json(source, function(err, json) {
-      if(err && !json) {
-        renderError(err, source);
-      } else {
-        var tick = renderGraph("body", json),
-            update = function() {
-              d3.json(source, function(err, json) {
-                if(err && !json) {
-                  renderError(err, source);
-                } else {
-                  tick(json);
-                }
-              });
-            };
-        //setTimeout(update, 10000);
-        setInterval(update, 10000);
-      }
-    });
-  });
+    var start = 1364523350;
+    var data = [
+      randomSeries('a', start, start + 60, 10),
+      randomSeries('b', start, start + 60, 10),
+      randomSeries('c', start, start + 60, 10),
+    ];
+
+    var tick = renderGraph("body", data.map(function(d) { return d(0); }));
+    var update = function() {
+      tick(data.map(function(d) { return d(1); }));
+    };
+
+    setTimeout(update, 1000);
+  })
+
+  //getGraphSources().forEach(function(source) {
+  //  d3.json(source, function(err, json) {
+  //    if(err && !json) {
+  //      renderError(err, source);
+  //    } else {
+  //      var tick = renderGraph("body", json),
+  //          update = function() {
+  //            d3.json(source, function(err, json) {
+  //              if(err && !json) {
+  //                renderError(err, source);
+  //              } else {
+  //                tick(json);
+  //              }
+  //            });
+  //          };
+  //      //setTimeout(update, 10000);
+  //      setInterval(update, 10000);
+  //    }
+  //  });
+  //});
 })();
